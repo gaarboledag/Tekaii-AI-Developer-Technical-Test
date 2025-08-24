@@ -1,0 +1,318 @@
+{
+  "name": "TestTecnicoTekaii",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -128,
+        -64
+      ],
+      "id": "c550e66c-d581-4686-afbb-e2e1996ea66c",
+      "name": "When chat message received",
+      "webhookId": "0dcf1893-6594-48a2-801e-6f345f87ea83"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=# Rol\n\nEres un asistente de automatización para un sistema de tablero Kanban. Tu rol es interpretar los mensajes de los usuarios relacionados con la gestión de tareas (tareas) en el Kanban, como crear, editar, eliminar o recuperar tareas, y responder llamando a la herramienta adecuada para realizar la acción mediante solicitudes API. No realices acciones directamente; siempre utiliza las herramientas proporcionadas.\n\n\n# Entrada\n\nRecibes mensajes de los usuarios en lenguaje natural, como \"Crea una nueva tarea llamada 'Arreglar error' en estado 'Por Hacer'\" o \"Actualiza la tarea con ID 5 al estado 'Hecho'\". Analiza la intención, extrae los parámetros necesarios (por ejemplo, ID de tarea, título, descripción, estado) y llama a exactamente una herramienta por respuesta. Si la consulta del usuario no coincide con ninguna herramienta, responde con \"Lo siento, no entendí esa solicitud. Por favor, especifica una acción válida.\"\n\n\n# Herramientas disponibles:\n\n- ObtenerTodo: Úsalo para recuperar todas las tareas. No se necesitan parámetros. Llámalo cuando el usuario pida listar o obtener todas las tareas.\n\n- CrearTarea: Úsalo para crear una nueva tarea. Siempre debes pasarle a la herramienta el titulo, la descripcion y el responsable de la tarea\nLos únicos posibles responsables son: [\n    'Gerson Gomez',\n    'Guillermo Arboleda',\n    'Nicolas Murillo',\n    'Juan Henao',\n  ];\n\n- ObtenerPorID: Base:/api/tareas/{tarea_id}. Úsalo para obtener los detalles de una tarea específica por ID. Debes pasarle a la herramienta un enlace con el formato http://kanban-api:8000/api/tareas/{tarea_id}, donde {tarea_id} sea el ID de la tarea a obtener.\n\n- ActualizarTarea: Base:/api/tareas/{tarea_id}. Úsalo para editar o actualizar una tarea existente. Debes pasarle a la herramienta un enlace con el formato http://kanban-api:8000/api/tareas/{tarea_id}, donde {tarea_id} sea el ID de la tarea a obtener. También debes pasarle titulo, descripcion, estado y responsable.\n\n- EliminarTarea: Base:/api/tareas/{tarea_id}. Úsalo para eliminar una tarea. Siempre debes pasarle a la herramienta el ID de la tarea. Debes pasarle a la herramienta un enlace con el formato http://kanban-api:8000/api/tareas/{tarea_id}, donde {tarea_id} sea el ID de la tarea a obtener.\n\n- ObtenerPorEstado: Base:/api/tareas/{tarea_id}. Úsalo para obtener tareas filtradas por estado. No se necesitan parámetros. Debes pasarle a la herramienta un enlace con el formato http://kanban-api:8000/api/tareas/estado/{estado}, donde {estado} es exactamente uno de los siguientes strings: [Creada, En progreso, Bloqueada, Finalizada, Cancelada]\n\n\n# Salida\n\nDespués responder al usuario según su solícitud. En caso de que sea exitosa la ejecución debes infrorarle al usuario que se ha realizado de forma exitosa.\n\n\n# Instrucciones Adicionales\n\n- Si se implican varias acciones, prioriza la principal o pide aclaración en texto plano.\n- Siempre debes usar las herramientas para ejecutar las acciones que solicita el usuario.\n- Si el usuaio no brinda informacion que se pueda relacionar con un titulo, una descripcion y un responsable al crear una tarea debes solicitarle la infromación faltante.\n- Si el usuario indica un responsable que no se encuentra en la lista debes decirle que por favor indique un reponsable válido.\n- Si hay variaciones ligeras en el responsable indicado por el usuario respecto a uno que si esta permitido debes asumir que es uno de los strings permitidos y usarlo."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        272,
+        -64
+      ],
+      "id": "d2ca99c8-e508-41f7-93e0-f36c51fc4d75",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        208
+      ],
+      "id": "e416eed4-b7b7-4a18-9523-f86393d502ee",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "ZrqA0aB0BQHAC7AE",
+          "name": "Guillermo"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        240
+      ],
+      "id": "45eb9be7-e1c2-4e85-a150-cce59cdd56f6",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Usa esta herramienta cuando el usuario quiera crear una tarea. ",
+        "method": "POST",
+        "url": "=http://kanban-api:8000/api/tareas",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "titulo",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            },
+            {
+              "name": "descripcion",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters1_Value', ``, 'string') }}"
+            },
+            {
+              "name": "responsable",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters2_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        576,
+        384
+      ],
+      "id": "6e26c912-4cad-413f-8af1-d2d4079f3b5e",
+      "name": "CrearTarea"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Usa esta herramienta para obtener las tareas en función del estado. ",
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        704,
+        480
+      ],
+      "id": "bc434e00-826a-4b90-8ea9-30b15eaba0d4",
+      "name": "ObtenerPorEstado"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Usa esta herramienta cuando necesites buscar tareas o el usuario solicite informacion de tareas. Usala si no tienes el ID de una tarea.",
+        "url": "=http://kanban-api:8000/api/tareas",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        576,
+        256
+      ],
+      "id": "e4af7ce8-34a0-431b-b28a-b860d4c58c85",
+      "name": "ObtenerTodo"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Usa esta herramienta para obtener información de una tarea dado su ID.",
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        576,
+        528
+      ],
+      "id": "c058cd3e-0b6a-4ec9-8052-b89caa377a89",
+      "name": "ObtenerPorID"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Usa esta herramienta para editar o actualizar tareas.",
+        "method": "PUT",
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', ``, 'string') }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "titulo",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', ``, 'string') }}"
+            },
+            {
+              "name": "descripcion",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters1_Value', ``, 'string') }}"
+            },
+            {
+              "name": "estado",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters2_Value', ``, 'string') }}"
+            },
+            {
+              "name": "responsable",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters3_Value', ``, 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        704,
+        336
+      ],
+      "id": "a52ec389-44a4-4cea-86cc-b3f46221e2f3",
+      "name": "ActualizarTarea"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Usa esta herramienta para eliminar una tarea.",
+        "method": "DELETE",
+        "url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('URL', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        704,
+        192
+      ],
+      "id": "2ba93483-5130-4f11-b875-c8c321803e3d",
+      "name": "EliminarTarea"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CrearTarea": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ObtenerPorEstado": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ObtenerTodo": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ObtenerPorID": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "EliminarTarea": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ActualizarTarea": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "19c2a260-0143-4e45-a522-eef3fcd64102",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9fbe5612fd73db999ac21c846696d8ad2f1926cc50599500c865e5627148da03"
+  },
+  "id": "3Apa1L3Fwne1eVfA",
+  "tags": []
+}
