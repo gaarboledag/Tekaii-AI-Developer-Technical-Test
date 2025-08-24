@@ -1,0 +1,51 @@
+services:
+  kanban-api:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kanban-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./backend:/app:cached  # Para desarrollo con hot reload
+    environment:
+      - DATABASE_URL=/app/data/kanban.db
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/docs"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+      
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: kanban-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - kanban-api
+
+  n8n:
+    image: n8nio/n8n
+    container_name: kanban-n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=memo
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+
+volumes:
+  kanban-data:
+  n8n_data:
